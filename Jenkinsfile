@@ -1,84 +1,61 @@
 pipeline{
     agent any
-    tools{
+    tools {
         jdk 'jdk17'
         nodejs 'node16'
     }
     environment {
-        SCANNER_HOME=tool 'sonar'
+        DOCKER_IMAGE : "tawfeeq421/game"
+        DOCKER_TAG : "${BUILD_NUMBER}"
     }
-    stages {
-        stage('clean workspace'){
+    stages{
+        stage('Clean Workspace'){
             steps{
                 cleanWs()
             }
         }
-        stage('Checkout from Git'){
+        stage('Git Checkout'){
             steps{
                 git branch: 'main', url: 'https://github.com/tawfeeq421/react-game.git'
             }
         }
-        stage("Sonarqube Analysis "){
+        stage('Install Dependency'){
             steps{
-                withSonarQubeEnv('sonar') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Game \
-                    -Dsonar.projectKey=Game '''
+                sh 'npm install'
+            }
+        }
+        stage('Jest Test'){
+            steps{
+                sh 'npm test -- --wtachAll --coverage'
+            }
+        }
+        stage('SonarQube Analysis'){
+            environment{
+                scannerHome = tool 'sonar'
+            }
+            steps{
+                withSonarQubeEnv('sonnarserver'){
+                    sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
         }
-        stage("quality gate"){
-           steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
-                }
-            } 
-        }
-        stage('Install Dependencies') {
-            steps {
-                sh "npm install"
-            }
-        }
-        stage('OWASP FS SCAN') {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-        stage('TRIVY FS SCAN') {
-            steps {
-                sh "trivy fs . > trivyfs.txt"
-            }
-        }
-        stage("Docker Build & Push"){
+        stage('Quality Gate'){
             steps{
-                script{
-                   withDockerRegistry(credentialsId: 'dockerhub', toolName: 'docker'){   
-                       sh "docker build -t 2048 ."
-                       sh "docker tag 2048 tawfeeq421/2048:latest "
-                       sh "docker push tawfeeq421/2048:latest "
-                    }
+                timeout(time: 1, unit: 'HOURS'){
+                   waitForQualityGate abordPipeline: true
                 }
             }
         }
-        stage("TRIVY"){
+        stage('Trivy FS Scan'){
             steps{
-                sh "trivy image tawfeeq421/2048:latest > trivy.txt" 
+                sh '''
+                trivy fs . \
+                --severity HIGH,CRITICAL \
+                --format table \
+                -o trivy-report.txt
+                '''
             }
         }
-        stage('Deploy to container'){
-            steps{
-                sh 'docker run -d --name 2048 -p 3000:3000 tawfeeq421/2048:latest'
-            }
-        }
-        stage('Deploy to kubernets'){
-            steps{
-                script{
-                    withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'k8s', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
-                       sh 'kubectl apply -f deployment.yaml'
-                  }
-                }
-            }
-        }
+        
     }
 }
-
