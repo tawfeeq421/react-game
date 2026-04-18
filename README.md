@@ -1,37 +1,148 @@
-# Getting Started with 2048
+# 🚀 Game App CI/CD Pipeline (Jenkins + Docker + EKS)
 
-This game (2048) was built using **React** and **TypeScript**. The unique part of this example is animations. The animations in React aren't that straightforward, so I hope you can learn something new from it.
+## 📌 Project Overview
 
-**Wondering how was that built?** You can find a video tutorial on [my YouTube Channel](https://www.youtube.com/channel/UCJV16_5c4A0amyBZSI4yP6A)
+This project demonstrates a complete **CI/CD pipeline** for a React-based game application using:
 
-## How To Play?
+* Jenkins (CI/CD automation)
+* Docker (containerization)
+* Kubernetes (EKS deployment)
+* SonarQube (code quality)
+* Trivy (security scanning)
 
-You can play 2048 on [Github pages](https://mateuszsokola.github.io/2048-in-react/)
+---
 
-## Available Scripts
+## 🛠️ Tech Stack
 
-In the project directory, you can run:
+* Frontend: React (Node.js)
+* CI/CD: Jenkins
+* Containerization: Docker
+* Orchestration: Kubernetes (AWS EKS)
+* Code Quality: SonarQube
+* Security: Trivy
+* Cloud: AWS
 
-### `yarn start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 🔄 CI/CD Pipeline Flow
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+1. Code pushed to GitHub
+2. Jenkins pipeline triggered automatically
+3. Install dependencies (npm install)
+4. Run tests (Jest)
+5. SonarQube code analysis
+6. Quality Gate validation
+7. Trivy filesystem scan
+8. Docker image build & push to DockerHub
+9. Trivy image scan
+10. Deploy to AWS EKS
+11. Rolling update using Kubernetes
 
-### `yarn build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📂 Project Structure
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```
+.
+├── k8s/
+│   ├── namespace.yml
+│   ├── game-app-deployment.yml
+│   ├── game-app-service.yml
+│   └── ingress.yml
+├── Jenkinsfile
+├── package.json
+└── src/
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-## Learn More
+## ⚙️ Prerequisites
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Before running this project, ensure you have:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+* Jenkins installed with required plugins
+* Docker installed
+* AWS CLI configured
+* kubectl installed
+* eksctl installed
+* Trivy installed
+* SonarQube server configured
+
+---
+
+## 🔐 Jenkins Credentials Required
+
+| ID          | Purpose          |
+| ----------- | ---------------- |
+| docker-cred | DockerHub login  |
+| aws-creds   | AWS access keys  |
+| sonarserver | SonarQube server |
+
+---
+
+## 🚀 Deployment Steps
+
+1. Clone repository:
+
+```
+git clone https://github.com/tawfeeq421/react-game.git
+```
+
+2. Configure Jenkins pipeline
+
+3. Run the pipeline
+
+4. Access application via LoadBalancer / Ingress
+
+---
+
+## 🐳 Docker Image
+
+```
+tawfeeq421/game:<BUILD_NUMBER>
+```
+
+---
+
+## ☸️ Kubernetes Deployment
+
+* Deployment: game-app-deployment
+* Namespace: game
+* Service: NodePort / LoadBalancer
+* Ingress: Enabled
+
+---
+
+## 🔍 Security Scanning
+
+* Trivy FS Scan (source code)
+* Trivy Image Scan (Docker image)
+
+---
+
+## 📊 Monitoring (Future Scope)
+
+* Prometheus
+* Grafana
+
+---
+
+## 🧠 Key Features
+
+* Automated CI/CD pipeline
+* Rolling updates in Kubernetes
+* Integrated security scanning
+* Code quality enforcement
+* Scalable cloud deployment
+
+---
+
+## 🙌 Author
+
+**Tawfeeq Ahmed**
+
+---
+
+## ⭐ If you like this project
+
+Give it a star on GitHub ⭐
