@@ -1,8 +1,8 @@
 pipeline{
     agent any
     tools {
-        jdk 'jdk17'
-        nodejs 'node16'
+        jdk 'JDK17'
+        nodejs 'NODE18'
     }
     environment {
         DOCKER_IMAGE : "tawfeeq421/game"
