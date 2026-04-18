@@ -1,77 +1,87 @@
-pipeline{
+pipeline {
     agent any
+
     tools {
         jdk 'JDK17'
         nodejs 'NODE18'
     }
+
     environment {
-        DOCKER_IMAGE : "tawfeeq421/game"
-        DOCKER_TAG : "${BUILD_NUMBER}"
+        DOCKER_IMAGE = "tawfeeq421/game"
+        DOCKER_TAG = "${BUILD_NUMBER}"
         AWS_REGION = 'us-west-2'
         CLUSTER_NAME = 'my-cluster'
-        NAMESPACE ='game'
+        NAMESPACE = 'game'
         IMAGE = "${DOCKER_IMAGE}:${DOCKER_TAG}"
     }
-    stages{
-        stage('Clean Workspace'){
-            steps{
-                cleanWs()
-            }
+
+    stages {
+
+        stage('Clean Workspace') {
+            steps { cleanWs() }
         }
-        stage('Git Checkout'){
-            steps{
+
+        stage('Checkout Code') {
+            steps {
                 git branch: 'main', url: 'https://github.com/tawfeeq421/react-game.git'
             }
         }
-        stage('Install Dependency'){
-            steps{
+
+        stage('Install Dependencies') {
+            steps {
                 sh 'npm install'
             }
         }
-        stage('Jest Test'){
-            steps{
-                sh 'npm test -- --wtachAll --coverage'
+
+        stage('Run Tests') {
+            steps {
+                sh 'npm test -- --watchAll=false --coverage'
             }
         }
-        stage('SonarQube Analysis'){
-            environment{
+
+        stage('SonarQube Scan') {
+            environment {
                 scannerHome = tool 'sonar'
             }
-            steps{
-                withSonarQubeEnv('sonnarserver'){
+            steps {
+                withSonarQubeEnv('sonarserver') {
                     sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
         }
-        stage('Quality Gate'){
-            steps{
-                timeout(time: 1, unit: 'HOURS'){
-                   waitForQualityGate abordPipeline: true
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
-        stage('Trivy FS Scan'){
-            steps{
+
+        stage('Trivy FS Scan') {
+            steps {
                 sh '''
                 trivy fs . \
                 --severity HIGH,CRITICAL \
                 --format table \
-                -o trivy-report.txt
+                -o trivy-report.txt || true
                 '''
             }
         }
-        stage('Docker Build & Push'){
-            steps{
-                script{
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-cred'){
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-cred') {
                         def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
                         app.push()
                     }
                 }
             }
         }
-        stage('Trivy Image Scan'){
-            steps{
+
+        stage('Trivy Image Scan') {
+            steps {
                 sh """
                 trivy image \
                 --severity HIGH,CRITICAL \
@@ -81,6 +91,52 @@ pipeline{
                 """
             }
         }
-        
+
+        stage('Deploy to EKS') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
+                    sh '''
+                    set -e
+
+                    aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
+
+                    kubectl apply -f k8s/namespace.yml
+
+                    kubectl apply -f k8s/game-app-deployment.yml -n $NAMESPACE
+                    kubectl apply -f k8s/game-app-service.yml -n $NAMESPACE
+                    kubectl apply -f k8s/ingress.yml -n $NAMESPACE
+
+                    kubectl set image deployment/game-app-deployment game=$IMAGE -n $NAMESPACE
+
+                    kubectl rollout status deployment/game-app-deployment -n $NAMESPACE
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'trivy-report.txt, trivy-image-report.txt', fingerprint: true
+        }
+
+        success {
+            slackSend(
+                channel: "#task",
+                color: "good",
+                message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nImage: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            )
+        }
+
+        failure {
+            slackSend(
+                channel: "#task",
+                color: "danger",
+                message: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            )
+        }
     }
 }
