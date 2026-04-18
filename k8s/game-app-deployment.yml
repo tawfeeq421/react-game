@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-app-deployment
+  namespace: game
+  labels:
+    app: game
+    auther: Tawfeeq
+
+spec:
+  replicas: 
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 
+  selector:
+    matchLabels:
+      app: game-app
+  template:
+    metadata:
+      labels:
+        app: game-app
+    spec:
+      containers:
+        - name: game
+          image: tawfeeq421/game:2
+          ports:
+            - name: game-port
+              containerPort: 80
+          resources:
+            requests:
+              cpu: 150m
+              memory: 120Mi
+            limits:
+              cpu: 250m
+              memory: 240Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+
+
+
+
