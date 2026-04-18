@@ -8,12 +8,12 @@ metadata:
     auther: Tawfeeq
 
 spec:
-  replicas: 
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
-      maxSurge: 
+      maxSurge: 1
   selector:
     matchLabels:
       app: game-app
