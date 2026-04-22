@@ -33,19 +33,24 @@ pipeline {
             }
         }
 
+        stage('Build Application') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
         stage('SonarQube Scan') {
             environment {
                 scannerHome = tool 'sonar'
             }
             steps {
-                withSonarQubeEnv('sonarserver'){
-                    sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=react-game \
-                    -Dsonar.projectName=react-game \
-                    -Dsonar.sources=. \
-                    '''
-                }
+                withSonarQubeEnv('sonarserver') {
+                    sh """
+                    ${scannerHome}/bin/sonar-scanner \
+                      -Dsonar.projectKey=react-game \
+                      -Dsonar.projectName=react-game \
+                      -Dsonar.sources=.
+                    """
                 }
             }
         }
@@ -73,7 +78,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'docker-cred') {
-                        def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                        def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}", ".")
                         app.push()
                     }
                 }
@@ -103,7 +108,7 @@ pipeline {
 
                     aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
 
-                    kubectl apply -f k8s/namespace.yml
+                    kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
                     kubectl apply -f k8s/game-app-deployment.yml -n $NAMESPACE
                     kubectl apply -f k8s/game-app-service.yml -n $NAMESPACE
