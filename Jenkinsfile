@@ -38,8 +38,14 @@ pipeline {
                 scannerHome = tool 'sonar'
             }
             steps {
-                withSonarQubeEnv('sonarserver') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+                withSonarQubeEnv('sonarserver'){
+                    sh '''
+                    sonar-scanner \
+                    -Dsonar.projectKey=react-game \
+                    -Dsonar.projectName=react-game \
+                    -Dsonar.sources=. \
+                    '''
+                }
                 }
             }
         }
@@ -119,7 +125,7 @@ pipeline {
 
         success {
             slackSend(
-                channel: "#task",
+                channel: "#devopscicd",
                 color: "good",
                 message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nImage: ${DOCKER_IMAGE}:${DOCKER_TAG}"
             )
@@ -127,7 +133,7 @@ pipeline {
 
         failure {
             slackSend(
-                channel: "#task",
+                channel: "#devopscicd",
                 color: "danger",
                 message: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
             )
