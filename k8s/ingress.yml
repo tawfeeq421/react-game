@@ -4,21 +4,21 @@ metadata:
   name: my-ingress
   namespace: game
   labels:
-    auther: Tawfeeq
-  annotation:
+    author: Tawfeeq
+  annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts: gameapp.com
-      secretName: game-tls
+
   rules:
     - host: gameapp.com
-      paths:
-        path: /
-        pathType: Prefix
-        backend:
-          name: game-service
-          port:
-            number: 80
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: game-service
+                port:
+                  number: 80
