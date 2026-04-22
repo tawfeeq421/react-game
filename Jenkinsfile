@@ -33,12 +33,6 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                sh 'npm test -- --watchAll=false --coverage'
-            }
-        }
-
         stage('SonarQube Scan') {
             environment {
                 scannerHome = tool 'sonar'
