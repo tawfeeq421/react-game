@@ -122,13 +122,13 @@ pipeline {
                 color: "good",
                 message: "✅ SUCCESS: ${env.JOB_NAME} #${BUILD_NUMBER}\nImage ${DOCKER_IMAGE}:${DOCKER_TAG}"
             )
+            }
             failure{
                 slackSend(
                     channel: "#amazon",
                     color: "danger",
                     message: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nCheck Logs ${env.BUILD_UR}"
                 )
-            }
         }
     }
 }
