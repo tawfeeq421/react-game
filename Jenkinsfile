@@ -96,7 +96,11 @@ pipeline {
                 """
             }
         }
-
+        stage('Remove Unusage Image'){
+            steps{
+                sh " docker system prune -af && docker rm -f $(doker ps -a)"
+            }
+        }
         stage('Deploy to EKS') {
             steps {
                 withCredentials([[
